@@ -27,6 +27,10 @@ Files: `RemoteControl.cs` (server, basic commands, help texts), `RemoteDesigner.
 
 ## Build
 
+Prebuilt `Smithbox.Remote.dll` for the Smithbox version in `SMITHBOX_REF` are on the
+[releases page](https://github.com/tvhdev/Smithbox.Remote/releases) (zip for Windows with `Smithbox-Remote.cmd`, tar.gz for
+Linux). They only work with a Smithbox built from that version. `.github/workflows/release.yml` builds them on a `v*` tag.
+
 Docker image (Linux, CPU rendering with Mesa llvmpipe) and a Windows build of Smithbox with the extension; Smithbox is
 fetched from GitHub at the ref in `SMITHBOX_REF`:
 
@@ -46,7 +50,8 @@ built against the same Smithbox version it is loaded into.
 
 ## Run
 
-Windows, e.g. `Smithbox-Remote.cmd` next to `Smithbox.Vulkan.exe`:
+Windows: put `Smithbox.Remote.dll` and `Smithbox-Remote.cmd` next to `Smithbox.Vulkan.exe` and start the `.cmd` (port 7780;
+extra arguments go to Smithbox). It does no more than:
 
 ```
 set DOTNET_STARTUP_HOOKS=%~dp0Smithbox.Remote.dll

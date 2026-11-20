@@ -1,0 +1,76 @@
+# Builds Smithbox.Remote.dll against the Smithbox version in SMITHBOX_REF and attaches it to a GitHub release.
+# Runs on a tag (v1.0, v1.1, ...) or by hand (Actions, Release, Run workflow) with an optional Smithbox ref.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      smithbox_ref:
+        description: 'Smithbox commit, tag or branch (empty: SMITHBOX_REF from the repository)'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Smithbox ref
+        id: ref
+        run: |
+          ref="${{ github.event.inputs.smithbox_ref }}"
+          [ -n "$ref" ] || ref="$(cat SMITHBOX_REF)"
+          echo "ref=$ref" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        with:
+          repository: vawser/Smithbox
+          ref: ${{ steps.ref.outputs.ref }}
+          path: smithbox
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Build
+        run: |
+          dotnet build Smithbox.Remote.csproj -c Release-win -o out/win -nologo -v q
+          dotnet build Smithbox.Remote.csproj -c Release-linux -o out/linux -nologo -v q
+
+      - name: Package
+        run: |
+          tag="${GITHUB_REF_NAME}"
+          sha="$(git -C smithbox rev-parse --short HEAD)"
+          mkdir -p dist/win dist/linux
+          cp out/win/Smithbox.Remote.dll Smithbox-Remote.cmd README.md LICENSE dist/win/
+          cp out/linux/Smithbox.Remote.dll remote.sh README.md LICENSE dist/linux/
+          (cd dist/win && zip -q "../Smithbox.Remote-$tag-win-x64.zip" .)
+          tar -czf "dist/Smithbox.Remote-$tag-linux-x64.tar.gz" -C dist/linux .
+          {
+            echo "Built against vawser/Smithbox \`${{ steps.ref.outputs.ref }}\` ($sha). It only works with a Smithbox built from"
+            echo "that version: the DLL links against Smithbox's assemblies."
+            echo
+            echo "Windows: unpack next to \`Smithbox.Vulkan.exe\` and start \`Smithbox-Remote.cmd\`."
+            echo "Linux: put \`Smithbox.Remote.dll\` next to \`Smithbox.Vulkan\` and start it with"
+            echo "\`DOTNET_STARTUP_HOOKS=\$PWD/Smithbox.Remote.dll ./Smithbox.Vulkan --remote-port 7780\`."
+          } > dist/notes.md
+
+      - uses: softprops/action-gh-release@v2
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          body_path: dist/notes.md
+          files: |
+            dist/Smithbox.Remote-*-win-x64.zip
+            dist/Smithbox.Remote-*-linux-x64.tar.gz
+
+      - uses: actions/upload-artifact@v4
+        if: "!startsWith(github.ref, 'refs/tags/')"
+        with:
+          name: Smithbox.Remote
+          path: dist/*
