@@ -1,13 +1,13 @@
 # Smithbox with the remote control extension, CPU rendering (Mesa llvmpipe) under Xvfb.
-# Smithbox is fetched from GitHub at the commit in SMITHBOX_COMMIT. Build from this folder (see build.sh):
+# Smithbox is fetched from GitHub at the ref in SMITHBOX_REF (a commit, tag such as 2.2.6, or branch such as main). Build from this folder (see build.sh):
 #   docker build --target runtime -t smithbox-remote .
 #   docker build --target win -o out/win-x64 .          (Windows build of Smithbox with the extension)
 
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS src
-COPY SMITHBOX_COMMIT /remote/SMITHBOX_COMMIT
+COPY SMITHBOX_REF /remote/SMITHBOX_REF
 RUN git init -q /sb && cd /sb \
  && git remote add origin https://github.com/vawser/Smithbox.git \
- && git fetch -q --depth 1 origin "$(cat /remote/SMITHBOX_COMMIT)" && git checkout -q FETCH_HEAD
+ && git fetch -q --depth 1 origin "$(cat /remote/SMITHBOX_REF)" && git checkout -q FETCH_HEAD
 COPY Smithbox.Remote.csproj *.cs /remote/
 
 FROM src AS build-linux

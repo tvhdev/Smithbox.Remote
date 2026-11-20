@@ -6,7 +6,9 @@ line of sight or gap scans, without clicking through the UI.
 
 It is a separate assembly, `Smithbox.Remote.dll`, that is loaded into an unchanged [Smithbox](https://github.com/vawser/Smithbox)
 at start-up. Without a port it does nothing. It is not part of Smithbox and not maintained by Smithbox's author; it builds
-against the Smithbox commit in `SMITHBOX_COMMIT` (Smithbox's public API changes, so other versions may need adjustments).
+against the Smithbox version in `SMITHBOX_REF` (a commit, tag or branch). It needs `Smithbox.FrameUpdated` and
+`VulkanViewport.Snapshot`, which are on Smithbox's `main` since 2026-11-19 and not yet in a release (2.2.6 is from
+2026-09-20 and lacks them, along with the collision and lightmap classes the checks use).
 
 ## How it attaches
 
@@ -26,7 +28,7 @@ Files: `RemoteControl.cs` (server, basic commands, help texts), `RemoteDesigner.
 ## Build
 
 Docker image (Linux, CPU rendering with Mesa llvmpipe) and a Windows build of Smithbox with the extension; Smithbox is
-fetched from GitHub at the commit in `SMITHBOX_COMMIT`:
+fetched from GitHub at the ref in `SMITHBOX_REF`:
 
 ```
 ./build.sh        # image smithbox-remote, Windows build in out/win-x64
@@ -35,7 +37,7 @@ fetched from GitHub at the commit in `SMITHBOX_COMMIT`:
 Only the extension, with the Smithbox sources in `smithbox/` next to it (or anywhere, with `-p:SmithboxSrc=<Smithbox>/src`):
 
 ```
-git clone https://github.com/vawser/Smithbox smithbox && git -C smithbox checkout $(cat SMITHBOX_COMMIT)
+git clone https://github.com/vawser/Smithbox smithbox && git -C smithbox checkout $(cat SMITHBOX_REF)
 dotnet build Smithbox.Remote.csproj -c Release-win      # or Release-linux
 ```
 
