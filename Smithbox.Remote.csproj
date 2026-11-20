@@ -9,7 +9,9 @@
     <Nullable>disable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <Configurations>Release-win;Release-linux</Configurations>
-    <SmithboxSrc Condition="'$(SmithboxSrc)' == ''">$(MSBuildThisFileDirectory)..</SmithboxSrc>
+    <!-- The Smithbox sources: a checkout in smithbox/ (see README), or -p:SmithboxSrc=<path to Smithbox/src> -->
+    <SmithboxSrc Condition="'$(SmithboxSrc)' == ''">$(MSBuildThisFileDirectory)smithbox/src</SmithboxSrc>
+    <DefaultItemExcludes>$(DefaultItemExcludes);smithbox/**;out/**</DefaultItemExcludes>
   </PropertyGroup>
 
   <ItemGroup>

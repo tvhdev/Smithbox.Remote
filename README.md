@@ -4,8 +4,9 @@ An HTTP remote control for the Smithbox Map Editor, so scripts and automation (i
 maps, move the camera, take lit screenshots of the viewport, inspect and place parts, and run checks such as walkability,
 line of sight or gap scans, without clicking through the UI.
 
-It ships as a separate assembly, `Smithbox.Remote.dll`, that is loaded into an unchanged Smithbox at start-up. Without a
-port it does nothing.
+It is a separate assembly, `Smithbox.Remote.dll`, that is loaded into an unchanged [Smithbox](https://github.com/vawser/Smithbox)
+at start-up. Without a port it does nothing. It is not part of Smithbox and not maintained by Smithbox's author; it builds
+against the Smithbox commit in `SMITHBOX_COMMIT` (Smithbox's public API changes, so other versions may need adjustments).
 
 ## How it attaches
 
@@ -24,20 +25,22 @@ Files: `RemoteControl.cs` (server, basic commands, help texts), `RemoteDesigner.
 
 ## Build
 
-Docker image (Linux, CPU rendering with Mesa llvmpipe) and a Windows build of Smithbox with the extension:
+Docker image (Linux, CPU rendering with Mesa llvmpipe) and a Windows build of Smithbox with the extension; Smithbox is
+fetched from GitHub at the commit in `SMITHBOX_COMMIT`:
 
 ```
-src/Smithbox.Remote/build.sh        # image smithbox-remote, Windows build in out/win-x64
+./build.sh        # image smithbox-remote, Windows build in out/win-x64
 ```
 
-Only the extension, against the Smithbox sources in this repository:
+Only the extension, with the Smithbox sources in `smithbox/` next to it (or anywhere, with `-p:SmithboxSrc=<Smithbox>/src`):
 
 ```
-dotnet build src/Smithbox.Remote/Smithbox.Remote.csproj -c Release-win      # or Release-linux
+git clone https://github.com/vawser/Smithbox smithbox && git -C smithbox checkout $(cat SMITHBOX_COMMIT)
+dotnet build Smithbox.Remote.csproj -c Release-win      # or Release-linux
 ```
 
-Then put `Smithbox.Remote.dll` from `src/Smithbox.Remote/bin/...` next to `Smithbox.Vulkan(.exe)`. The
-extension must be built against the same Smithbox version it is loaded into.
+Then put `Smithbox.Remote.dll` from `bin/Release-win/net10.0/` next to `Smithbox.Vulkan.exe`. The extension must be
+built against the same Smithbox version it is loaded into.
 
 ## Run
 
@@ -93,7 +96,7 @@ curl -s -X POST http://127.0.0.1:7780/map-load -d '{"map":"m10_00_00_00"}'
 `remote.sh` wraps this (`SMITHBOX_REMOTE_PORT`, or `SMITHBOX_DOCKER=<container>` for a container):
 
 ```
-R=src/Smithbox.Remote/remote.sh
+R=./remote.sh
 $R project-load name=my-project
 $R map-load map=m10_00_00_00
 $R wait settle=10
@@ -161,3 +164,7 @@ On top of that (`RemoteSecurity.cs`):
 - Regular expressions in filter arguments time out after 2 s, so a filter cannot hang Smithbox.
 
 Anyone who can call the server can still change and save the loaded maps; that is its purpose. Start it only when you need it.
+
+## License
+
+GPL-3.0, like Smithbox, whose assemblies this extension links against (see `LICENSE`).
