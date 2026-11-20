@@ -1630,7 +1630,7 @@ public static partial class RemoteControl
         while (load.MoveNext())
             yield return null;
 
-        var filter = GetString(args, "filter") is string f ? new Regex(f, RegexOptions.IgnoreCase) : null;
+        var filter = GetString(args, "filter") is string f ? Rx(f) : null;
         var ok = 0;
         var fallback = new JsonArray();
         var missing = new JsonArray();
@@ -1675,7 +1675,7 @@ public static partial class RemoteControl
         var project = view.Editor.Project;
         var target = GetTargetMap(view, args);
         var types = ParseTypes(GetString(args, "type"), "MapPiece", "Object");
-        var filter = GetString(args, "filter") is string f ? new Regex(f, RegexOptions.IgnoreCase) : null;
+        var filter = GetString(args, "filter") is string f ? Rx(f) : null;
 
         var idle = WaitIdle(GetFloat(args, "timeout", 600), 3);
         while (idle.MoveNext())
@@ -1774,13 +1774,13 @@ public static partial class RemoteControl
     {
         var project = GetProject() ?? throw new RemoteException("No project is loaded");
         var model = RequireString(args, "model");
-        var mapsRx = GetString(args, "maps") is string m ? new Regex(m, RegexOptions.IgnoreCase) : null;
+        var mapsRx = GetString(args, "maps") is string m ? Rx(m) : null;
         var all = new List<IndexPart>();
         var build = BuildIndex(project, mapsRx, all);
         while (build.MoveNext())
             yield return null;
 
-        var rx = new Regex($"^{model}$", RegexOptions.IgnoreCase);
+        var rx = Rx($"^{model}$");
         var hits = all.Where(p => p.Model != null && rx.IsMatch(p.Model)).ToList();
         var limit = (int)GetFloat(args, "limit", 20);
 
@@ -1809,9 +1809,9 @@ public static partial class RemoteControl
     private static IEnumerator ModelSearch(JsonObject args, JsonObject result)
     {
         var project = GetProject() ?? throw new RemoteException("No project is loaded");
-        var mapsRx = GetString(args, "maps") is string m ? new Regex(m, RegexOptions.IgnoreCase) : null;
-        var nameRx = GetString(args, "name") is string n ? new Regex(n, RegexOptions.IgnoreCase) : null;
-        var texRx = GetString(args, "texture") is string tx ? new Regex(tx, RegexOptions.IgnoreCase) : null;
+        var mapsRx = GetString(args, "maps") is string m ? Rx(m) : null;
+        var nameRx = GetString(args, "name") is string n ? Rx(n) : null;
+        var texRx = GetString(args, "texture") is string tx ? Rx(tx) : null;
         var types = ParseTypes(GetString(args, "type"), "MapPiece", "Object");
         var minSize = GetFloat(args, "minSize", 0);
         var maxSize = GetFloat(args, "maxSize", float.MaxValue);

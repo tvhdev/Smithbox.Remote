@@ -257,8 +257,8 @@ public static partial class RemoteControl
         var maps = Has(args, "map")
             ? new List<MapContainer> { RequireLoadedMap(view, GetString(args, "map")) }
             : LoadedMaps(view.Editor.Project).Select(m => m.Value).ToList();
-        var filter = GetString(args, "filter") is string f ? new Regex(f, RegexOptions.IgnoreCase) : null;
-        var shape = GetString(args, "shape") is string s ? new Regex(s, RegexOptions.IgnoreCase) : null;
+        var filter = GetString(args, "filter") is string f ? Rx(f) : null;
+        var shape = GetString(args, "shape") is string s ? Rx(s) : null;
         var near = GetVector(args, "near");
         var radius = GetFloat(args, "radius", 10);
         var limit = (int)GetFloat(args, "limit", 200);
@@ -515,8 +515,8 @@ public static partial class RemoteControl
         var maps = Has(args, "map")
             ? new List<MapContainer> { RequireLoadedMap(view, GetString(args, "map")) }
             : LoadedMaps(view.Editor.Project).Select(m => m.Value).ToList();
-        var type = GetString(args, "type") is string t ? new Regex($"^({t})$", RegexOptions.IgnoreCase) : null;
-        var filter = GetString(args, "filter") is string f ? new Regex(f, RegexOptions.IgnoreCase) : null;
+        var type = GetString(args, "type") is string t ? Rx($"^({t})$") : null;
+        var filter = GetString(args, "filter") is string f ? Rx(f) : null;
         var refers = GetString(args, "refers") ?? GetString(args, "part") ?? GetString(args, "region");
         var limit = (int)GetFloat(args, "limit", 200);
         var list = new JsonArray();

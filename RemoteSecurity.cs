@@ -5,6 +5,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Text.Json.Nodes;
+using System.Text.RegularExpressions;
 
 namespace StudioCore.Utilities.Remote;
 
@@ -19,12 +20,16 @@ namespace StudioCore.Utilities.Remote;
 ///         from --remote-roots / SMITHBOX_REMOTE_ROOTS (separated by the platform's path separator); ref= may also
 ///         read from the game data. Symbolic links are resolved before the check.</item>
 ///         <item>cfg does not set string settings to paths, and command only takes Map Editor commands (map/...).</item>
+///         <item>Regular expressions from arguments time out after 2 s, so a filter cannot hang the main thread.</item>
 ///     </list>
 /// </summary>
 public static partial class RemoteControl
 {
     // Every argument that names a file or folder
     private static readonly string[] PathKeys = { "path", "dir", "file", "faces", "ref", "out", "before", "after" };
+
+    /// <summary>A regular expression from an argument, case-insensitive, with a match timeout</summary>
+    private static Regex Rx(string pattern) => new(pattern, RegexOptions.IgnoreCase, TimeSpan.FromSeconds(2));
 
     private static string Token =>
         GetArg("--remote-token") is { Length: > 0 } t ? t : Environment.GetEnvironmentVariable("SMITHBOX_REMOTE_TOKEN");

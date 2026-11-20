@@ -1035,7 +1035,7 @@ public static partial class RemoteControl
     {
         var project = GetProject() ?? throw new RemoteException("No project is loaded");
         var filter = GetString(args, "filter");
-        var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
+        var regex = filter != null ? Rx(filter) : null;
 
         var list = new JsonArray();
 
@@ -1237,8 +1237,8 @@ public static partial class RemoteControl
         var filter = GetString(args, "filter");
         var typeFilter = GetString(args, "type");
         var limit = (int)GetFloat(args, "limit", 500);
-        var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
-        var typeRegex = typeFilter != null ? new Regex(typeFilter, RegexOptions.IgnoreCase) : null;
+        var regex = filter != null ? Rx(filter) : null;
+        var typeRegex = typeFilter != null ? Rx(typeFilter) : null;
 
         var list = new JsonArray();
         var total = 0;
@@ -1368,7 +1368,7 @@ public static partial class RemoteControl
     private static IEnumerator ConfigList(JsonObject args, JsonObject result)
     {
         var filter = GetString(args, "filter");
-        var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
+        var regex = filter != null ? Rx(filter) : null;
         var list = new JsonObject();
 
         foreach (var field in typeof(CFG).GetFields(BindingFlags.Public | BindingFlags.Instance))
@@ -1822,7 +1822,7 @@ public static partial class RemoteControl
     {
         var view = GetView();
         var filter = GetString(args, "filter");
-        var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
+        var regex = filter != null ? Rx(filter) : null;
         var maps = Has(args, "map")
             ? new List<MapContainer> { RequireLoadedMap(view, GetString(args, "map")) }
             : LoadedMaps(view.Editor.Project).Select(m => m.Value).ToList();
@@ -2004,7 +2004,7 @@ public static partial class RemoteControl
         var since = (long)GetFloat(args, "since", 0);
         var level = GetString(args, "level", "Trace");
         var filter = GetString(args, "filter");
-        var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
+        var regex = filter != null ? Rx(filter) : null;
 
         if (!Enum.TryParse(level, true, out Microsoft.Extensions.Logging.LogLevel minLevel))
             throw new RemoteException($"Unknown level '{level}': Trace, Debug, Information, Warning, Error");

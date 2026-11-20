@@ -158,5 +158,6 @@ On top of that (`RemoteSecurity.cs`):
   `X-Smithbox-Token` header (or `token=`). Use it on machines shared with other users. `remote.sh` sends
   `SMITHBOX_REMOTE_TOKEN` when it is set.
 - `cfg` does not set string settings to paths, and `command` only passes on Map Editor commands (`map/...`).
+- Regular expressions in filter arguments time out after 2 s, so a filter cannot hang Smithbox.
 
 Anyone who can call the server can still change and save the loaded maps; that is its purpose. Start it only when you need it.

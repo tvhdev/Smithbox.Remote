@@ -523,7 +523,7 @@ public static partial class RemoteControl
             var source = RequireLoadedMap(view, sourceMap);
             var names = GetString(args, "parts")?.Split(new[] { ',', ' ', ';' }, StringSplitOptions.RemoveEmptyEntries);
             var filter = GetString(args, "filter");
-            var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
+            var regex = filter != null ? Rx(filter) : null;
             var min = GetVector(args, "min");
             var max = GetVector(args, "max");
 
@@ -1289,7 +1289,7 @@ public static partial class RemoteControl
         var types = ParseTypes(GetString(args, "labelTypes"), "MapPiece", "Object", "DummyObject", "Enemy", "DummyEnemy",
             "Player");
         var filter = GetString(args, "labelFilter");
-        var regex = filter != null ? new Regex(filter, RegexOptions.IgnoreCase) : null;
+        var regex = filter != null ? Rx(filter) : null;
         var visibleOnly = GetBool(args, "labelVisible", false);
         var max = (int)GetFloat(args, "labelMax", 200);
         var scale = Math.Clamp((int)GetFloat(args, "labelScale", 1), 1, 4);
