@@ -197,7 +197,7 @@ public static partial class RemoteControl
         ["diff"] = "ref=<reference.msb.dcx> [map=] [faces=<navmesh_faces.txt> out=<faces.txt> radius=6]: changed parts against " +
                    "a reference, check points, faces nearby for leak-scan",
         ["overlap"] = "min=x,y,z max=x,y,z [maxdist=0.03] [type=MapPiece] [only=m1,m2] [skip=...] [amin=0] [maxSize=4] " +
-                      "[minDepth=0.05] [limit=50]: coplanar faces (FLVER triangles) and interpenetrating parts",
+                      "[minDepth=0.05] [limit=50]: coplanar faces (FLVER triangles, only the part inside the box) and interpenetrating parts",
         ["free-spot"] = "min=x,y,z max=x,y,z (size=x,y,z | from=<map>/<part>) [step=0.5] [clearance=0.1] [wall=true] " +
                         "[yaws=0,90] [limit=20]: find a free, level spot",
         ["los"] = "from=x,y,z (to=x,y,z | part=<name>): line of sight against collision (free), plus the render meshes it crosses " +

@@ -133,6 +133,31 @@ $R screenshot path=/tmp/shots/b.png labels=true                # part names draw
 Responses of editing commands contain `record`/`records` (and `unrecords` for undo), so a client can keep its own log of
 placements and replay it elsewhere.
 
+### Why there is no MCP server
+
+AI agents use this API through their shell (`curl`, `remote.sh`, small scripts). An MCP server on top of it was considered
+and left out on purpose:
+
+- **Scripts do the bulk work.** A check round or a contact sheet is 30-100 calls (camera, screenshot, checks). A script
+  sends them in one run, and the agent looks at the result once. MCP tools can only be called by the model, one turn per
+  call, so the same round would cost dozens of turns and push every intermediate answer through the context. Shell
+  scripts, build steps and other tools could not use an MCP server at all.
+- **Context cost.** About 70 commands with their arguments become several thousand tokens of tool schemas, loaded into
+  every agent's context on every turn whether it needs Smithbox or not. With HTTP an agent reads `/help?cmd=<command>`
+  only for the command it uses.
+- **One instance per agent.** Each agent works with its own Smithbox (several containers in parallel). MCP servers are
+  configured per client, not per task, so every tool would need an extra instance argument or each agent its own server
+  entry. Here the port or container name in an environment variable is enough.
+- **Long commands.** `map-load` takes 30-60 s on large maps, some checks longer. MCP clients often give up on a tool call
+  after about a minute; with curl the client sets the limit (`--max-time`).
+- **Images need no special channel.** Screenshots are files; an agent that can read images reads the PNG. For many views,
+  one contact sheet costs less context than many inline images.
+- **Less to secure.** One loopback HTTP server with the checks under Security. An MCP bridge would be another process
+  that can drive Smithbox and needs the same care.
+
+If a client can only use MCP, a thin bridge with a few generic tools (run a command with arguments, take a screenshot,
+show help) over this HTTP API is a short script and needs no change here.
+
 ## Tips
 
 - Screenshots wait until nothing loads and then `settle` frames (default 10; 2-3 is enough in Docker). The Map Editor must be

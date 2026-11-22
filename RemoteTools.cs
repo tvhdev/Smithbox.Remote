@@ -1131,6 +1131,7 @@ public static partial class RemoteControl
         public Vector3[] Triangles = Array.Empty<Vector3>();
         public string[] Textures = Array.Empty<string>();
         public Vector3 Min, Max;
+        public Vector3 TriMin, TriMax;      // from the triangles (the FLVER header is not always right)
         public bool Found;
     }
 
@@ -1222,7 +1223,11 @@ public static partial class RemoteControl
             .Select(t => TextureName(t.Path)).Distinct(StringComparer.OrdinalIgnoreCase).ToArray();
 
         if (triangles)
+        {
             geo.Triangles = FlverTriangles(flver).ToArray();
+            if (geo.Triangles.Length > 0)
+                (geo.TriMin, geo.TriMax) = Extent(geo.Triangles);
+        }
 
         return geo;
     }
@@ -1256,6 +1261,20 @@ public static partial class RemoteControl
         return (Vector3.Min(a, b), Vector3.Max(a, b));
     }
 
+    private static (Vector3 Min, Vector3 Max) WorldBox(Vector3 min, Vector3 max, Matrix4x4 m)
+    {
+        var rlo = new Vector3(float.MaxValue);
+        var rhi = new Vector3(float.MinValue);
+        for (var i = 0; i < 8; i++)
+        {
+            var v = Vector3.Transform(new Vector3((i & 1) != 0 ? max.X : min.X, (i & 2) != 0 ? max.Y : min.Y, (i & 4) != 0 ? max.Z : min.Z), m);
+            rlo = Vector3.Min(rlo, v);
+            rhi = Vector3.Max(rhi, v);
+        }
+
+        return (rlo, rhi);
+    }
+
     private static bool BoxesOverlap(Vector3 aLo, Vector3 aHi, Vector3 bLo, Vector3 bHi, float pad = 0) =>
         aLo.X <= bHi.X + pad && bLo.X <= aHi.X + pad && aLo.Y <= bHi.Y + pad && bLo.Y <= aHi.Y + pad &&
         aLo.Z <= bHi.Z + pad && bLo.Z <= aHi.Z + pad;
@@ -1276,6 +1295,9 @@ public static partial class RemoteControl
         var only = GetString(args, "only")?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.OrdinalIgnoreCase);
         var skip = GetString(args, "skip")?.Split(',', StringSplitOptions.RemoveEmptyEntries).ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new();
 
+        // Only triangles inside the box (plus maxdist): large parts (whole corridors) are not sampled in full
+        var clo = lo - new Vector3(maxd + 0.01f);
+        var chi = hi + new Vector3(maxd + 0.01f);
         var parts = new List<PartGeo>();
         foreach (var ent in target.Objects.OfType<MsbEntity>())
         {
@@ -1288,12 +1310,29 @@ public static partial class RemoteControl
                 continue;
 
             var m = PartWorld(ent);
-            var w = geo.Triangles.Select(v => Vector3.Transform(v, m)).ToArray();
-            var (pl, ph) = Extent(w);
-            if (!BoxesOverlap(pl, ph, lo, hi))
+            var (bl, bh) = WorldBox(geo.TriMin, geo.TriMax, m);
+            if (!BoxesOverlap(bl, bh, clo, chi, 0.01f))
                 continue;
 
-            parts.Add(new PartGeo { Ent = ent, W = w, Lo = pl, Hi = ph });
+            var w = new List<Vector3>();
+            for (var t = 0; t + 2 < geo.Triangles.Length; t += 3)
+            {
+                var a = Vector3.Transform(geo.Triangles[t], m);
+                var b = Vector3.Transform(geo.Triangles[t + 1], m);
+                var c = Vector3.Transform(geo.Triangles[t + 2], m);
+                if (!BoxesOverlap(Vector3.Min(a, Vector3.Min(b, c)), Vector3.Max(a, Vector3.Max(b, c)), clo, chi))
+                    continue;
+                w.Add(a);
+                w.Add(b);
+                w.Add(c);
+            }
+
+            if (w.Count == 0)
+                continue;
+
+            var wa = w.ToArray();
+            var (pl, ph) = Extent(wa);
+            parts.Add(new PartGeo { Ent = ent, W = wa, Lo = pl, Hi = ph });
             yield return null;
         }
 
@@ -1332,7 +1371,7 @@ public static partial class RemoteControl
                     for (var j = 0; j < steps - i; j++)
                     {
                         var p = w0 + (i + 1 / 3f) / steps * e1 + (j + 1 / 3f) / steps * e2;
-                        if (!BoxesOverlap(p, p, B.Lo, B.Hi, maxd))
+                        if (!BoxesOverlap(p, p, B.Lo, B.Hi, maxd) || !BoxesOverlap(p, p, lo, hi, maxd))
                             continue;
 
                         foreach (var sg in new[] { 1f, -1f })
