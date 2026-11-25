@@ -751,7 +751,7 @@ public static partial class RemoteControl
         result["references"] = refs;
         result["usedBy"] = new JsonArray(ReferencesTo(map, ent.Name).Select(r => (JsonNode)$"{r.Ent.Name} ({PartTypeName(r.Ent)}.{r.Field})").ToArray());
 
-        if (ent.RenderSceneMesh != null && CFG.Current.MapEditor_ModelLoad_Collisions)
+        if (ent.RenderSceneMesh != null && CFG.Current.MapEditor.MapEditor_ModelLoad_Collisions)
         {
             var collision = EnsureCollision(view, 300);
             while (collision.MoveNext())
@@ -945,7 +945,7 @@ public static partial class RemoteControl
                 if (Has(bm, "orthoSize"))
                     camera.SetOrthographicSize(GetFloat(bm, "orthoSize", camera.OrthographicSize));
                 if (Has(bm, "fov"))
-                    CFG.Current.Viewport_Camera_FOV = GetFloat(bm, "fov", CFG.Current.Viewport_Camera_FOV);
+                    CFG.Current.Viewport.Viewport_Camera_FOV = GetFloat(bm, "fov", CFG.Current.Viewport.Viewport_Camera_FOV);
                 camera.CameraTransform.Position = GetVector(bm, "pos") ?? camera.CameraTransform.Position;
                 if (GetVector(bm, "rot") is Vector3 rot)
                     camera.CameraTransform.EulerRotation = rot * Deg;

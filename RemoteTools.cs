@@ -706,9 +706,9 @@ public static partial class RemoteControl
         var old = GetMember(member);
 
         if (member is FieldInfo f)
-            f.SetValue(CFG.Current, value);
+            f.SetValue(ConfigOwner(member), value);
         else
-            ((PropertyInfo)member).SetValue(CFG.Current, value);
+            ((PropertyInfo)member).SetValue(ConfigOwner(member), value);
 
         return old;
     }

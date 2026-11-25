@@ -851,7 +851,7 @@ public static partial class RemoteControl
             ["pos"] = ToJson(t.Position),
             ["rot"] = ToJson(rot),
             ["forward"] = ToJson(forward),
-            ["fov"] = Round(CFG.Current.Viewport_Camera_FOV),
+            ["fov"] = Round(CFG.Current.Viewport.Viewport_Camera_FOV),
             ["mode"] = camera.ViewMode.ToString(),
             ["orthoSize"] = Round(camera.OrthographicSize),
             ["viewport"] = new JsonArray(viewport.Width, viewport.Height),
@@ -1157,7 +1157,7 @@ public static partial class RemoteControl
             camera.SetOrthographicSize(GetFloat(args, "orthoSize", camera.OrthographicSize));
 
         if (Has(args, "fov"))
-            CFG.Current.Viewport_Camera_FOV = GetFloat(args, "fov", CFG.Current.Viewport_Camera_FOV);
+            CFG.Current.Viewport.Viewport_Camera_FOV = GetFloat(args, "fov", CFG.Current.Viewport.Viewport_Camera_FOV);
 
         var pos = GetVector(args, "pos");
 
@@ -1285,18 +1285,39 @@ public static partial class RemoteControl
         yield break;
     }
 
+    /// <summary>Settings live in CFG itself and in its sections (CFG.Current.Viewport, .MapEditor, ...), under their flat names</summary>
+    private static IEnumerable<object> ConfigOwners()
+    {
+        yield return CFG.Current;
+
+        foreach (var field in typeof(CFG).GetFields(BindingFlags.Public | BindingFlags.Instance))
+        {
+            if (typeof(ICfgSection).IsAssignableFrom(field.FieldType))
+                yield return field.GetValue(CFG.Current);
+        }
+    }
+
+    private static object ConfigOwner(MemberInfo m) => ConfigOwners().First(o => o.GetType() == m.ReflectedType);
+
     private static MemberInfo FindConfigMember(string name)
     {
         const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase;
 
-        return (MemberInfo)typeof(CFG).GetField(name, flags) ?? typeof(CFG).GetProperty(name, flags)
-            ?? throw new RemoteException($"No setting '{name}' (see /cfg-list)");
+        foreach (var owner in ConfigOwners())
+        {
+            var member = (MemberInfo)owner.GetType().GetField(name, flags) ?? owner.GetType().GetProperty(name, flags);
+
+            if (member != null)
+                return member;
+        }
+
+        throw new RemoteException($"No setting '{name}' (see /cfg-list)");
     }
 
     private static Type MemberType(MemberInfo m) => m is FieldInfo f ? f.FieldType : ((PropertyInfo)m).PropertyType;
 
     private static object GetMember(MemberInfo m) =>
-        m is FieldInfo f ? f.GetValue(CFG.Current) : ((PropertyInfo)m).GetValue(CFG.Current);
+        m is FieldInfo f ? f.GetValue(ConfigOwner(m)) : ((PropertyInfo)m).GetValue(ConfigOwner(m));
 
     private static JsonNode ConfigValueToJson(object value) => value switch
     {
@@ -1345,7 +1366,7 @@ public static partial class RemoteControl
 
             if (member is FieldInfo field)
             {
-                field.SetValue(CFG.Current, value);
+                field.SetValue(ConfigOwner(member), value);
             }
             else
             {
@@ -1354,7 +1375,7 @@ public static partial class RemoteControl
                 if (!property.CanWrite)
                     throw new RemoteException($"Setting '{member.Name}' is read-only");
 
-                property.SetValue(CFG.Current, value);
+                property.SetValue(ConfigOwner(member), value);
             }
 
             yield return null;
@@ -1371,12 +1392,19 @@ public static partial class RemoteControl
         var regex = filter != null ? Rx(filter) : null;
         var list = new JsonObject();
 
-        foreach (var field in typeof(CFG).GetFields(BindingFlags.Public | BindingFlags.Instance))
+        foreach (var owner in ConfigOwners())
         {
-            if (regex != null && !regex.IsMatch(field.Name))
-                continue;
+            var members = owner.GetType().GetFields(BindingFlags.Public | BindingFlags.Instance).Cast<MemberInfo>()
+                .Concat(owner.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                    .Where(p => p.CanRead && p.GetIndexParameters().Length == 0));
 
-            list[field.Name] = ConfigValueToJson(field.GetValue(CFG.Current));
+            foreach (var member in members)
+            {
+                if (typeof(ICfgSection).IsAssignableFrom(MemberType(member)) || (regex != null && !regex.IsMatch(member.Name)))
+                    continue;
+
+                list[member.Name] = ConfigValueToJson(GetMember(member));
+            }
         }
 
         result["settings"] = list;
@@ -1637,7 +1665,7 @@ public static partial class RemoteControl
         if (world == null || !world.CanUse())
             throw new RemoteException("Collision ray casts aren't supported for this game");
 
-        if (!CFG.Current.MapEditor_ModelLoad_Collisions)
+        if (!CFG.Current.MapEditor.MapEditor_ModelLoad_Collisions)
             throw new RemoteException("Collision loading is off (cfg MapEditor_ModelLoad_Collisions)");
 
         if (!world.RequestBuild())
